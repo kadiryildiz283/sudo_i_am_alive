@@ -1,0 +1,31 @@
+{
+    "system": {
+        "daemon_name": "sudo_i_am_alive",
+        "update_frequency_hz": 10,
+        "watchdog_timeout_sec": 60,
+        "path_core_memory": "/home/kadir/.local/share/sudo_i_am_alive/core_db",
+        "path_vector_db": "/home/kadir/.local/share/sudo_i_am_alive/faiss_index",
+        "path_model": "/home/kadir/.local/share/sudo_i_am_alive/models/phi3-mini.gguf"
+    },
+    "llm": {
+        "context_size": 8192,
+        "thread_count": 8,
+        "gpu_layers": 33,
+        "temperature": 0.3,
+        "kv_cache_shift_threshold": 0.9
+    },
+    "dna": {
+        "confidence_level": 1.0,
+        "self_critique_score": 0.0,
+        "boredom_index": 0.0,
+        "memory_decay_rate": 0.05,
+        "importance_score": 0.5,
+        "severity_risk_index": 0.0,
+        "chain_of_thought_depth": 3,
+        "override_threshold": 0.85,
+        "system_fatigue_level": 0.0,
+        "spontaneous_insight_probability": 0.05,
+        "digital_sleep_cycle_depth": 0.0,
+        "devil_advocate_trigger": 0.95
+    }
+}
