@@ -41,14 +41,13 @@ FetchContent_Declare(faiss
     GIT_TAG        v1.8.0
 )
 
-# Testleri ve gereksiz bileşenleri zorla kapat
+# FAISS için sadece ihtiyacımız olan bileşenleri aktif et, testleri kapat
 set(FAISS_ENABLE_GPU OFF CACHE BOOL "" FORCE)
 set(FAISS_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
-set(FAISS_ENABLE_TESTS OFF CACHE BOOL "" FORCE) # Hatanın kökten çözümü bu
+set(FAISS_ENABLE_TESTS OFF CACHE BOOL "" FORCE) # BU SATIR HATAYI ÇÖZER
 set(FAISS_OPT_LEVEL "avx2" CACHE STRING "" FORCE)
 
 FetchContent_MakeAvailable(faiss)
-
 # System dependencies for the daemon [cite: 4, 210]
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SYSTEMD REQUIRED libsystemd)
@@ -63,6 +62,8 @@ set(SOURCES
     src/sensors/ClipboardMonitor.cpp # Ekle
     src/memory/MemoryManager.cpp
     src/memory/EmbeddingProcessor.cpp
+    src/core/StateMachine.cpp          # BU SATIRIN EKLENDİĞİNDEN EMİN OL
+    src/core/ResponseGenerator.cpp
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

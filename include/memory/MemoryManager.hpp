@@ -1,22 +1,32 @@
 #pragma once
-
 #include <string>
 #include <vector>
-#include <cstdint>
+#include <unordered_map>
+#include <faiss/IndexFlat.h>
 #include <faiss/IndexIDMap.h>
-#include "memory/CognitiveRouter.hpp"
 
 namespace memory {
+    // ÇAKILMAYI ÖNLEMEK İÇİN ENUM BURADAN KALDIRILDI
 
-    class MemoryManager {
-      public:
-        MemoryManager(int dimension = 3072);
-        uint64_t generate_id(const std::string& payload);
-        void store_short_term(const std::string& payload, const std::vector<float>& embedding);
-
-    private:
-        faiss::IndexIDMap* index;
-        uint32_t fast_hash(const std::string& data);
+    struct SearchResult {
+        long id;
+        float distance;
+        std::string payload;
     };
 
-} // namespace memory
+    class MemoryManager {
+    public:
+        MemoryManager(int dim);
+        ~MemoryManager();
+
+        void store_short_term(const std::string& text, const std::vector<float>& embedding);
+        std::vector<SearchResult> search_similar(const std::vector<float>& query_embedding, int k = 3);
+
+    private:
+        int dimension;
+        long next_id;
+        faiss::IndexFlatL2* base_index;
+        faiss::IndexIDMap* id_map;
+        std::unordered_map<long, std::string> memory_vault; 
+    };
+}
