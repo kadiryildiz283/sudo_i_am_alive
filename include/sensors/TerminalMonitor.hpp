@@ -2,36 +2,50 @@
 
 #include <string>
 #include <thread>
+#include <functional>
+#include <ctime>
+#include <queue>
+#include <mutex>
 #include <atomic>
-#include <boost/lockfree/spsc_queue.hpp>
 
 namespace sensors {
 
+    // DATA STRUCTURE: Represents a single intercepted command event
     struct TerminalEvent {
         std::string command;
-        long timestamp;
+        time_t timestamp;
     };
 
     class TerminalMonitor {
+    public:
+        // CONSTRUCTOR: Initializes IPC socket path and the cognitive gatekeeper callback
+        TerminalMonitor(const std::string& socket_path, std::function<bool(const std::string&)> gatekeeper_cb);
+        ~TerminalMonitor();
+
+        // LIFECYCLE: Thread management for the background socket listener
+        void start();
+        void stop();
+
+        // QUEUE CONSUMER: Main thread calls this to retrieve processed events safely
+        bool pop_event(TerminalEvent& event);
+
     private:
-        std::string history_path;
+        // BACKGROUND TASK: Actively listens on the Unix socket and evaluates incoming commands
+        void run_loop();
+
+        std::string sock_path;
         std::atomic<bool> running;
         std::thread monitor_thread;
         
-        // Lock-free queue for high-performance event passing [cite: 37, 38]
-        boost::lockfree::spsc_queue<TerminalEvent, boost::lockfree::capacity<1024>> event_queue;
-
-        void run_loop(); // Internal epoll loop [cite: 30, 34]
-
-    public:
-        explicit TerminalMonitor(const std::string& path);
-        ~TerminalMonitor();
-
-        void start();
-        void stop();
+        // COGNITIVE FILTER: Lambda function injected from main.cpp to decide BLOCK or OK
+        std::function<bool(const std::string&)> gatekeeper;
         
-        // Used by Cognitive Router to fetch captured data
-        bool pop_event(TerminalEvent& event);
+        // SYSTEM RESOURCE: File descriptor for the Unix Domain Socket
+        int server_fd;
+
+        // THREAD-SAFE MEMORY: Queue mechanism to transfer events to the main thread
+        std::queue<TerminalEvent> event_queue;
+        std::mutex queue_mutex;
     };
 
 } // namespace sensors

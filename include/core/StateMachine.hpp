@@ -1,29 +1,29 @@
 #pragma once
-#include <vector>
 #include "core/SentinelConfig.hpp"
+#include <chrono>
+#include <string>
 
 namespace core {
-
     class StateMachine {
     public:
-        // Sentinel DNA parametrelerini yükleyen yapılandırıcı 
-        StateMachine(const core::SentinelDNA& dna);
-        
-        // Parametreleri 10Hz frekansında günceller [cite: 130]
+        StateMachine(const SentinelDNA& initial_dna);
+        ~StateMachine();
+
+        bool should_intervene();
         void evaluate_tick(float delta_time, int event_count);
-        
-        // Müdahale Denklemi: (C_t * I_t * R_t) > O_t [cite: 169]
-        bool should_intervene() const;
-        
-        // DNA durumuna değiştirilebilir (mutable) erişim sağlar
-        core::SentinelDNA& get_mutable_state() { return current_params; }
-        const core::SentinelDNA& get_state() const { return current_params; }
+        SentinelDNA& get_mutable_state();
+
+        void register_user_compliance(bool complied);
+        bool is_waiting_for_compliance() const;
+
+        // RASYONEL EKLENTİLER: Spontanlık ve DNA Sürekliliği
+        bool should_spontaneously_interact() const;
+        void reset_boredom();
+        void save_dna_state(const std::string& filepath) const; // Diske JSON formatında yazar
 
     private:
-        core::SentinelDNA current_params;
-        
-        void update_boredom(int event_count); // B_t [cite: 144]
-        void update_fatigue();                // F_t [cite: 171]
+        SentinelDNA current_params;
+        std::chrono::steady_clock::time_point last_active_time;
+        bool waiting_for_compliance_check;
     };
-
-} // namespace core
+}

@@ -1,9 +1,13 @@
 #include "memory/EmbeddingProcessor.hpp"
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 
 namespace memory {
-    EmbeddingProcessor::EmbeddingProcessor(const std::string& model_path) {
+        EmbeddingProcessor::EmbeddingProcessor(const std::string& model_path) {
+           llama_log_set([](enum ggml_log_level level, const char * text, void * user_data) {
+        }, nullptr);
+
         llama_backend_init();
         auto m_params = llama_model_default_params();
         model = llama_model_load_from_file(model_path.c_str(), m_params);
@@ -13,6 +17,7 @@ namespace memory {
         }
 
         auto c_params = llama_context_default_params();
+        c_params.n_ctx = 4096; // RASYONEL GENİŞLETME: Zihin kapasitesi 4096 tokense çıkarıldı
         c_params.embeddings = true;
         ctx = llama_init_from_model(model, c_params);
         if (ctx == nullptr) {
@@ -24,9 +29,9 @@ namespace memory {
     }
 
     std::vector<float> EmbeddingProcessor::compute_embedding(const std::string& text) {
-        // RASYONEL BYPASS: Eski verileri temizlemek için Context baştan yaratılır
         llama_free(ctx);
         auto c_params = llama_context_default_params();
+        c_params.n_ctx = 4096; // RASYONEL GENİŞLETME
         c_params.embeddings = true;
         ctx = llama_init_from_model(model, c_params);
 
@@ -49,9 +54,9 @@ namespace memory {
     }
 
     std::string EmbeddingProcessor::generate_text(const std::string& prompt, int max_tokens) {
-        // RASYONEL BYPASS: Inference öncesi saf mantık zemini (Amnesia)
         llama_free(ctx);
         auto c_params = llama_context_default_params();
+        c_params.n_ctx = 4096; // RASYONEL GENİŞLETME
         c_params.embeddings = true;
         ctx = llama_init_from_model(model, c_params);
 
@@ -66,10 +71,17 @@ namespace memory {
         }
         tokens_list.resize(n_tokens);
 
-        llama_batch batch = llama_batch_init(512, 0, 1);
+        // GÜVENLİK KİLİDİ: Eğer prompt çok büyükse Context Window'a sığdırmak için kırp
+        if (n_tokens > 4096 - max_tokens) {
+            n_tokens = 4096 - max_tokens;
+            std::cout << "[COGNITION] Warning: Context limit reached. Truncating input." << std::endl;
+        }
+
+        // RASYONEL DÜZELTME: Hardcoded 512 yerine dinamik bellek tahsisi
+        llama_batch batch = llama_batch_init(n_tokens + max_tokens, 0, 1);
         batch.n_tokens = 0; 
         
-        for (size_t i = 0; i < tokens_list.size(); i++) {
+        for (int i = 0; i < n_tokens; i++) {
             batch.token[batch.n_tokens] = tokens_list[i];
             batch.pos[batch.n_tokens] = i; 
             batch.n_seq_id[batch.n_tokens] = 1;
